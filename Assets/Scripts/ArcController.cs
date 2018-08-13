@@ -26,8 +26,8 @@ public class ArcController : MonoBehaviour {
 			if (obj) {
 				if (obj.GetComponent<PoolObject>()) {
 					Arc arc = obj.GetComponent<Arc>();
-					arc.startAngle = Random.Range(0f, 360.0f);
-					arc.arcAngle = Random.Range(0.0f, 360.0f);
+					//arc.startAngle = Random.Range(0f, 360.0f);
+					arc.arcAngle = Random.Range(0, 360);
 					arc.arcWidth = 2f;
 
 					arc.growingVelocity = growingVelocity;
