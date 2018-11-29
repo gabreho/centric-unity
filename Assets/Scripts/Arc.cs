@@ -33,7 +33,7 @@ public class Arc : PoolObject {
 	public float growingVelocity = 0.0f;
 	public float rotationVelocity = 0.0f;
 
-	Material arcMaterial;
+    Material arcMaterial;
 
 	void Awake () {
 		viewMeshFilter = GetComponent<MeshFilter> ();
@@ -41,6 +41,7 @@ public class Arc : PoolObject {
 	}
 
 	void Start () {
+        arcMaterial = meshRenderer.sharedMaterial;
 		DrawArcMesh ();
 	}
 
@@ -98,7 +99,7 @@ public class Arc : PoolObject {
 		viewMesh = CreateArcMesh ("Square", resSides, arcWidth, arcRadius, arcAngle); 
 		viewMeshFilter.mesh = viewMesh;
 
-		arcMaterial = meshRenderer.sharedMaterial;
+        arcMaterial = meshRenderer.sharedMaterial;
 		arcMaterial.color = arcColor;
 
 	}
@@ -148,13 +149,13 @@ public class Arc : PoolObject {
             vertices = new Vector3[0];
             triangles = new int[0];
 
-			bool isCircle = arcAngle == 360;
+			//bool isCircle = arcAngle == 360;
             float angleStep = arcAngle / sides;
             //int steps = isCircle ? sides : sides + 1;
             int steps = sides + 1;
 
-            MeshInfo top =    GetArcMesh(angleStep, sides, width, radius, steps, arcHeight, false, isCircle);
-            MeshInfo bottom = GetArcMesh(angleStep, sides, width, radius, steps, 0, true, isCircle);
+            MeshInfo top =    GetArcMesh(angleStep, sides, width, radius, steps, arcHeight/2, false);
+            MeshInfo bottom = GetArcMesh(angleStep, sides, width, radius, steps, -arcHeight/2, true);
 
             for (int i = 0; i < bottom.triangles.Length; i++) {
                 bottom.triangles[i] += top.vertices.Length;
@@ -163,14 +164,40 @@ public class Arc : PoolObject {
             List<int> tris = new List<int>();
             tris.AddRange(top.triangles);
             tris.AddRange(bottom.triangles);
-            int[] _tris = tris.ToArray();
+
 
             List<Vector3> verts = new List<Vector3>();
             verts.AddRange(top.vertices);
             verts.AddRange(bottom.vertices);
+
+            for (int iTop = 0; iTop < sides * 2; iTop++) {
+                int iBottom = iTop + top.vertices.Length;
+
+
+                // inner faces
+                tris.Add(iBottom);
+                tris.Add(iTop);
+                tris.Add(iBottom + 2);
+
+                tris.Add(iTop);
+                tris.Add(iTop + 2);
+                tris.Add(iBottom + 2);
+
+
+                // outter faces
+
+                //tris.Add(iBottom + 1);
+                //tris.Add(iTop + 1);
+                //tris.Add(iTop + 2);
+
+                //tris.Add(iBottom + 1);
+                //tris.Add(iTop + 2);
+                //tris.Add(iBottom + 2);
+
+            } 
+
             Vector3[] _verts = verts.ToArray();
-
-
+            int[] _tris = tris.ToArray();
             vertices = _verts;
             triangles = _tris;
 		}
@@ -181,18 +208,14 @@ public class Arc : PoolObject {
                         float radius,
                         int steps,
                         float yPos,
-                        bool reverse,
-                        bool isCircle)
+                        bool reverse)
         {
             
-            int vertexCount = sides * 2;
-            //int arcVertex = isCircle ? sides * 2 : sides * 2 + 2;
             int arcVertex = sides * 2 + 2;
 
             Vector3[] _vertices = new Vector3[arcVertex];
-            int[] _triangles = new int[vertexCount * 3];
 
-
+            List<int> _tris = new List<int>();
 
             for (int i = 0; i < steps; i++)
             {
@@ -208,97 +231,34 @@ public class Arc : PoolObject {
 
                 _vertices[i * 2] = inner;
                 _vertices[i * 2 + 1] = outer;
-                int ti = i * 6; //triangle index
 
+                if (i < sides) {
 
+                    if (reverse) {
+                        _tris.Add(i * 2 + 1);
+                        _tris.Add(i * 2 + 0);
+                        _tris.Add(i * 2 + 2);
 
-                //if (!isCircle)
-                {
-                    if (i < sides) {
+                        _tris.Add(i * 2 + 3);
+                        _tris.Add(i * 2 + 1);
+                        _tris.Add(i * 2 + 2);
 
-                        if (reverse) {
-                            
-                            _triangles[ti]     = i * 2 + 1;
-                            _triangles[ti + 1] = i * 2 + 0;
-                            _triangles[ti + 2] = i * 2 + 2;
+                    } else {
+                        _tris.Add(i * 2 + 1);
+                        _tris.Add(i * 2 + 2);
+                        _tris.Add(i * 2 + 0);
 
-                            _triangles[ti + 3] = i * 2 + 3;
-                            _triangles[ti + 4] = i * 2 + 1;
-                            _triangles[ti + 5] = i * 2 + 2;
-
-                        } else {
-                            
-                            _triangles[ti]     = i * 2 + 1;
-                            _triangles[ti + 1] = i * 2 + 2;
-                            _triangles[ti + 2] = i * 2 + 0;
-
-                            _triangles[ti + 3] = i * 2 + 3;
-                            _triangles[ti + 4] = i * 2 + 2;
-                            _triangles[ti + 5] = i * 2 + 1;
-                        }
+                        _tris.Add(i * 2 + 3);
+                        _tris.Add(i * 2 + 2);
+                        _tris.Add(i * 2 + 1);
                     }
 
+
                 }
-                //else {
-
-                    //if (i == sides - 1)
-                    //{
-
-                    //    if (reverse) {
-
-                    //        _triangles[ti]     = i * 2 + 1;
-                    //        _triangles[ti + 1] = i * 2;
-                    //        _triangles[ti + 2] = 0;
-
-                    //        _triangles[ti + 3] = 1;
-                    //        _triangles[ti + 4] = i * 2 + 1;
-                    //        _triangles[ti + 5] = 0;
-
-
-                    //    } else {
-                    //        _triangles[ti] = i * 2 + 1;
-                    //        _triangles[ti + 1] = 0;
-                    //        _triangles[ti + 2] = i * 2;
-
-                    //        _triangles[ti + 3] = 1;
-                    //        _triangles[ti + 4] = 0;
-                    //        _triangles[ti + 5] = i * 2 + 1;
-                    //    }
-                    //}
-                    //else
-                    //{
-
-                    //    if (reverse)
-                    //    {
-
-                    //        _triangles[ti] = i * 2 + 1;
-                    //        _triangles[ti + 1] = i * 2 + 0;
-                    //        _triangles[ti + 2] = i * 2 + 2;
-
-                    //        _triangles[ti + 3] = i * 2 + 3;
-                    //        _triangles[ti + 4] = i * 2 + 1;
-                    //        _triangles[ti + 5] = i * 2 + 2;
-
-                    //    }
-                    //    else
-                    //    {
-
-                    //        _triangles[ti] = i * 2 + 1;
-                    //        _triangles[ti + 1] = i * 2 + 2;
-                    //        _triangles[ti + 2] = i * 2 + 0;
-
-                    //        _triangles[ti + 3] = i * 2 + 3;
-                    //        _triangles[ti + 4] = i * 2 + 2;
-                    //        _triangles[ti + 5] = i * 2 + 1;
-                    //    }
-
-                       
-                    //}
-                //}
             }
 
             MeshInfo info = new MeshInfo();
-            info.triangles = _triangles;
+            info.triangles = _tris.ToArray();
             info.vertices = _vertices;
             return info;
         }
